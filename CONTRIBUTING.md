@@ -16,7 +16,7 @@ There are three primary ways to connect with the Software-Enabled Flash project:
 * The [Software-Enabled Flash Project website](https://softwareenabledflash.org):
   This is the main project site and contains more information about the project, governance, and applications of Software-Enabled Flash technology.
 
-* The [SEF-dev](https://lists.softwareenabledflash.org/SEF-dev) mail list:
+* The [SEF-dev](https://lists.softwareenabledflash.org/g/SEF-dev) mail list:
   This is a development focused mail list with a deep history of technical conversations and decisions that have shaped the project.
 
 * [GitHub Issues](https://github.com/SoftwareEnabledFlash/SEF-API/issues):
@@ -24,7 +24,7 @@ There are three primary ways to connect with the Software-Enabled Flash project:
 
 ### How to Ask for Help
 
-If you have trouble installing, building, or using the library, but there's not yet reason to suspect you've encountered a genuine bug, start by posting a question to the [SEF-dev](http://lists.softwareenabledflash.org/SEF-dev) mailing list. This is the place for question such has "How do I...".
+If you have trouble installing, building, or using the library, but there's not yet reason to suspect you've encountered a genuine bug, start by posting a question to the [SEF-dev](https://lists.softwareenabledflash.org/g/SEF-dev) mailing list. This is the place for question such has "How do I...".
 
 ### How to Report a Bug
 
