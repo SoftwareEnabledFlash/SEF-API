@@ -1,22 +1,11 @@
-# Software-Enabled Flash™ Technology, a Linux Foundation Project
+# Software-Enabled Flash API Specification
 
-Software-Enabled Flash technology consists of purpose-built, media-centric Flash hardware focused on hyperscaler requirements, with an open source API and libraries to provide the functionality hyperscalers demand:
-* Workload isolation in both hardware and software domains
-* Latency outcome control via advanced, hardware-assisted queueing
-* Complete host control of Flash management, garbage collection, and offload features
-* Faster and easier Flash technology migration
-* Creation of custom, application-centric and optimized Flash protocols and translation layers
+This repository contains the API specification and header file to be used with the Software-Enabled Flash Project's SDK and SEF native software.
 
-Software-Enabled Flash maximizes Flash flexibility, performance, parallelism, and its value to applications.
+This document will define the interface between the SDK and applications on the host and the actual hardware implementing the project's interfaces.  No specification or proprietary information related to the underlying hardware, firmware, or flash technology is implied or intended.
 
-## Project Homepage
+Please read carefully the associated [license](LICENSE.md), [scope](SCOPE.md), [Community Specification License](COMMUNITY_SPECIFICATION_LICENSE.md), and other documents in this repository.
 
-Visit the project site at [https://softwareenabledflash.org](https://softwareenabledflash.org) for more information and instructions on joining the project and development mailing lists.
+For more information, please visit the [Software-Enabled Flash Project website](https://softwareenabledflash.org).
 
-## Contributing Code
-
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to contribute code, file issues, follow our mailing list, and generally get involved with the project.
-
-## License
-
-This project's code is licensed under the [BSD 3-clause license](LICENSE).
+* This project follows the [Linux Foundation Antitrust Policy](https://www.linuxfoundation.org/legal/antitrust-policy).

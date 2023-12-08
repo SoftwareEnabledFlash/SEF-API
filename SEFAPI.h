@@ -3,7 +3,7 @@
  * Application Programming Interface (API)
  * SEFAPI.h
  *
- * Copyright (C) 2018, 2019, 2020, 2021 - KIOXIA Corporation. All rights reserved.
+ * Copyright (C) 2018, 2019, 2020, 2021, 2022, 2023 - KIOXIA Corporation. All rights reserved.
  *
  * This software is licensed under the 3-Clause BSD License.
  *
@@ -32,9 +32,9 @@
  *
  *  Functions and structures for configuring and using SEF units
  *
- *  @version   1.13g
- *  @date      January 2022
- *  @copyright Copyright (C) 2018, 2019, 2020, 2021, 2022 - KIOXIA Corporation. All rights reserved.
+ *  @version   1.14i
+ *  @date      October 2023
+ *  @copyright Copyright (C) 2018, 2019, 2020, 2021, 2022, 2023 - KIOXIA Corporation. All rights reserved.
  *
  *  @defgroup ApiManCmd API Management Commands
  *  @defgroup ApiDataCmd Data Access Commands
@@ -61,14 +61,16 @@ extern "C" {
 #define htole64(U) (U)
 #pragma warning(disable : 4200)  /* zero-sized array */
 #pragma warning(disable : 4201)  /* nameless struct/union */
+#define NONNULL()
 #else
 #define PACKED __attribute__((packed))
+#define NONNULL(args...)  __attribute__((nonnull (args)))
 #include <sys/uio.h>
 #endif
 
 #pragma pack(push,8)
 
-#define SEFAPIVersion 0x010d
+#define SEFAPIVersion 0x010e
 #define SEFMaxRootPointer 8
 #define SEFMaxReadQueues 8
 
@@ -116,10 +118,10 @@ enum SEFDeadlineType {
 } PACKED;
 
 /* definition of bits in supported options field of SEFInfo struct below... */
-#define kFragmentedSupported            (1 << 0) /**< Fragmented defect managment type supported */
+#define kFragmentedSupported            (1 << 0) /**< Fragmented defect management type supported */
 #define kPackedSupported                (1 << 1) /**< Packed defect management type supported */
 #define kPerfectSupported               (1 << 2) /**< Perfect defect management type supported */
-#define kEncryptionSupported            (1 << 3) /**< Encryption supported */
+#define kMixedDefectManagementSupported (1 << 3) /**< Mixed defect management types supported */
 #define kHostSerialNumberSupported      (1 << 4)
 #define kCopyUserAddressRangeSupported  (1 << 5) /**< User address ranges supported for nameless copy */
 #define kCopyFlashAddressListSupported  (1 << 6) /**< Flash address lists supported for nameless copy */
@@ -127,16 +129,16 @@ enum SEFDeadlineType {
 #define kInDriveGCSupported             (1 << 8) /**< SEFAPIIdentifier kInDriveGC is supported */
 #define kVirtualSSDSupported            (1 << 9) /**< SEFAPIIdentifier kVirtualSSD is supported */
 #define kAutomaticSupported             (1 << 10)/**< SEFErrorRecoveryMode kAutomatic is supported */
-#define kHostControlledSupported        (1 << 11)/**< SEFErrorRecoveyrMode kHostControlled is supported */
-#define kFastestSupported               (1 << 12)/**< SEFDeadlineType kFastest is supported */
-#define kTypicalSupported               (1 << 13)/**< SEFDeadlineType kTypical is supported */
-#define kLongSupported                  (1 << 14)/**< SEFDeadlineType kLong is supported */
-#define kHeroicSupported                (1 << 15)/**< SEFDeadlineType kHeroic is supported */
-#define kStableLatencySupported         (1 << 16)
-#define kIdleTimeSupported              (1 << 17)
-#define kStopSupported                  (1 << 18)
-#define kMixedDefectManagmentSupported  (1 << 19)/**< Mixed defect management types supported */
-#define kPSLCSupported                  (1 << 20)/**< pSLC supported */
+#define kHostControlledSupported        (1 << 11)/**< SEFErrorRecoveryMode kHostControlled is supported */
+#define kStableLatencySupported         (1 << 12)
+#define kStopSupported                  (1 << 13)
+#define kPSLCSupported                  (1 << 14)/**< pSLC supported */
+#define kFastestSupported               (1 << 15)/**< SEFDeadlineType kFastest is supported */
+#define kTypicalSupported               (1 << 16)/**< SEFDeadlineType kTypical is supported */
+#define kLongSupported                  (1 << 17)/**< SEFDeadlineType kLong is supported */
+#define kHeroicSupported                (1 << 18)/**< SEFDeadlineType kHeroic is supported */
+#define kIdleTimeSupported              (1 << 19)
+#define kEncryptionSupported            (1 << 20)/**< Encryption supported */
 #define kDeleteVirtualDeviceSupported   (1 << 21)/**< Deleting virtual devices supported */
 
 /**
@@ -241,11 +243,12 @@ struct SEFInfo {
   uint16_t unitNumber;          /**< Unit number of the SEFInfo struct */
   uint16_t APIVersion;          /**< API Version */
   uint64_t supportedOptions;    /**< Supported features - see kSupported defines */
+  uint32_t maxOpenSuperBlocks;  /**< Firmware version specific, max number of open super blocks for the device.  When
+                                     0, the limit is per Virtual Device instead.  @see SEFVirtualDeviceInfo */
   uint16_t maxQoSDomains;       /**< Hardware version specific, may be less than 65535 defined by architecture */
   uint16_t maxRootPointers;     /**< Firmware version specific, may be less than 8 defined by architecture */
   uint16_t maxPlacementIDs;     /**< Firmware version specific, max number of auto opened super blocks per QoS Domain */
-  uint16_t maxOpenSuperBlocks;  /**< Firmware version specific, max number of open super blocks for the device.  When
-                                     0, the limit is per Virtual Device instead.  @see SEFVirtualDeviceInfo */
+  uint16_t reserved_0;          /**< Reserved/unused */
   uint16_t numReadQueues;       /**< Firmware version specific, max number of read queues total */
   uint16_t numVirtualDevices;   /**< Number of currently defined virtual devices */
   uint16_t numQoSDomains;       /**< Number of currently defined QoS Domains */
@@ -262,7 +265,7 @@ struct SEFInfo {
   uint16_t minReadWeight;       /**< Advisory minimum read weight to allow timely house keeping internal I/O */
   uint16_t minWriteWeight;      /**< Advisory minimum write weight to allow timely house keeping internal I/O */
   uint32_t openExpirationPeriod;/**< Granularity in seconds for entire block */
-  uint16_t reserved_0;          /**< Reserved/unused */
+  uint16_t reserved_1;          /**< Reserved/unused */
   uint16_t numADUSizes;         /**< Size of ADUsize array that follows at end of structure */
   struct SEFADUsize ADUsize[];  /**< Array of supported ADU sizes */
 };
@@ -279,7 +282,7 @@ struct SEFInfo {
  *
  *  @return     SEFInfo struct or NULL if sefHandle is NULL.
  */
-const struct SEFInfo *SEFGetInformation(SEFHandle sefHandle);
+const struct SEFInfo *SEFGetInformation(SEFHandle sefHandle) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -308,7 +311,8 @@ struct SEFVirtualDeviceList {
  *  @retval    -EINVAL        The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0              info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFListVirtualDevices(SEFHandle sefHandle, struct SEFVirtualDeviceList *list, int bufferSize);
+struct SEFStatus SEFListVirtualDevices(SEFHandle sefHandle, struct SEFVirtualDeviceList *list,
+                                      size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -337,7 +341,8 @@ struct SEFQoSDomainList {
  *  @retval    -EINVAL        The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0              info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFListQoSDomains(SEFHandle sefHandle, struct SEFQoSDomainList *list, int bufferSize);
+struct SEFStatus SEFListQoSDomains(SEFHandle sefHandle, struct SEFQoSDomainList *list,
+                                   size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -371,9 +376,9 @@ struct SEFUserAddress {
 
 /**
  *  @ingroup    ApiManCmd
- * 
+ *
  *  @param      userAddress           User address to be parsed
- * 
+ *
  *  @return     Returns meta value from a user address
  **/
 static inline uint32_t SEFGetUserAddressMeta(struct SEFUserAddress userAddress)
@@ -383,9 +388,9 @@ static inline uint32_t SEFGetUserAddressMeta(struct SEFUserAddress userAddress)
 
 /**
  *  @ingroup    ApiManCmd
- * 
+ *
  *  @param      userAddress           User address to be parsed
- * 
+ *
  *  @return     Returns LBA value from a user address
  **/
 static inline uint64_t SEFGetUserAddressLba(struct SEFUserAddress userAddress)
@@ -396,7 +401,7 @@ static inline uint64_t SEFGetUserAddressLba(struct SEFUserAddress userAddress)
 /**
  *  @ingroup    ApiManCmd
  *  @brief      Return LBA and meta values from a user address
- * 
+ *
  *  @param      userAddress           User address to be parsed
  *  @param[out] lba                   Lba parsed from the user address
  *  @param[out] meta                  Meta parsed from the user address
@@ -410,10 +415,10 @@ static inline void SEFParseUserAddress(struct SEFUserAddress userAddress, uint64
 /**
  *  @ingroup    ApiManCmd
  *  @brief      Creates a user address from lba and meta values
- * 
+ *
  *  @param      lba           lba to be used to generate user address (40 bits)
  *  @param      meta          meta to be used to generate user address (24 bits)
- * 
+ *
  *  @return     Returns the user address created from lba and meta values
  **/
 static inline struct SEFUserAddress SEFCreateUserAddress(uint64_t lba, uint32_t meta)
@@ -434,6 +439,7 @@ struct SEFFlashAddress {
 #if defined(_MSC_VER)
 static inline struct SEFFlashAddress _int2fa(uint64_t v) {return {v};}
 #define SEFAutoAllocate _int2fa(UINT64_C(0xffffffffffffffff))
+#define SEFAutoAllocatePSLC _int2fa(htole64(UINT64_C(0xfffffffffffffffe)))
 
 static inline struct SEFUserAddress _int2ua(uint64_t v) {return {v};}
 #define SEFUserAddressIgnore _int2ua(UINT64_C(0xffffffffffffffff))
@@ -442,11 +448,23 @@ static inline struct SEFUserAddress _int2ua(uint64_t v) {return {v};}
 #else
 /**
  *  @ingroup     CommonStructs
- *  @brief       Flash address value to indicate device should allocate the super block while doing a write
+ *  @brief       Flash address value to indicate device should allocate the super
+ *               block from standard FLASH while doing a write
  *
  *  @see         SEFWriteWithoutPhysicalAddress()
  */
 #define SEFAutoAllocate ((struct SEFFlashAddress) {UINT64_C(0xffffffffffffffff)})
+
+/**
+ *  @ingroup     CommonStructs
+ *  @brief       Flash address value to indicate device should allocate the super
+ *               block from pSLC while doing a write
+ *
+ *  @see         SEFWriteWithoutPhysicalAddress()
+ */
+#define SEFAutoAllocatePSLC ((struct SEFFlashAddress) { \
+  htole64(UINT64_C(0xfffffffffffffffe))})
+
 /**
  *  @ingroup     CommonStructs
  *  @brief       User address value to indicate it should not be validated by
@@ -504,7 +522,7 @@ static inline int SEFIsEqualFlashAddress(struct SEFFlashAddress flashAddress1, s
  *               otherwise it returns SEFNullFlashAddress.
  */
 struct SEFFlashAddress SEFNextFlashAddress(SEFQoSHandle qosHandle,
-                                           struct SEFFlashAddress flashAddress);
+                                           struct SEFFlashAddress flashAddress) NONNULL(1);
 
 /**
  *  @ingroup     Enums
@@ -543,11 +561,16 @@ struct SEFQoSNotification {
     struct SEFFlashAddress patrolFlashAddress;      /**< Valid when type is kRequirePatrol */
     struct {
       //! \unnamed{struct:2}
-      char *userData;                               /**< pointer to buffered data */
-      struct SEFUserAddress unflushedUserAddress;   /**< affected user address */
+      struct SEFUserAddress unflushedUserAddress;   /**< Affected user address */
+      char *userData;                               /**< Pointer to buffered data */
     };                                              /**< Valid when type is kUnflushedData */
     struct SEFFlashAddress unreadableFlashAddress;  /**< Valid when type is kUnreadable */
-    struct SEFFlashAddress changedFlashAddress;     /**< Valid when type is kSuperBlockStateChanged (open=>closed) */
+    struct {
+      //! \unamed{struct:3}
+      struct SEFFlashAddress changedFlashAddress;   /**< Valid when type is kSuperBlockStateChanged (open=>closed) */
+      uint32_t writtenADUs;                         /**< Number of ADUs written by user i/o commands to the super block */
+      uint32_t numADUs;                             /**< Capacity of the super block in ADUs */
+    };
     struct {
       //! \unnamed{struct:2}
       const struct iovec *iov;                      /**< A pointer to the scatter gather list */
@@ -564,7 +587,7 @@ struct SEFQoSNotification {
  * This event is issued at the Virtual Device level.  Due to failure of blocks,
  * actual available capacity may fall below the allocated capacity of the
  * attached QoS Domains. The host should take action to release super blocks
- * back to the Virtual Device's free pool before it is entierly consumed.
+ * back to the Virtual Device's free pool before it is entirely consumed.
  */
 struct SEFVDNotification {
   enum SEFNotificationType type;             /**< Is kReducedCapacity, kOutOfCapacity or
@@ -593,10 +616,10 @@ struct SEFDieList
  *  @brief      Relative die time weights for write type of I/O operations
  */
 struct SEFWeights {
-  uint16_t eraseWeight;   /**< Default weight for an erase operation by SEFAllocateSuperBlock,
-                               SEFFlushSuperBlock and SEFCloseSuperBlock */
   uint16_t programWeight; /**< Default weight for a program operation by the
                                Nameless Write and Nameless Copy commands */
+  uint16_t eraseWeight;   /**< Default weight for an erase operation by SEFAllocateSuperBlock,
+                               SEFFlushSuperBlock and SEFCloseSuperBlock */
 };
 
 /**
@@ -632,11 +655,9 @@ struct SEFVirtualDeviceConfig
  *  Valid die IDs start at 0 and are less than the total number of dies in a
  *  SEF Unit. The total number of dies is equal to SEFInfo::numBanks *
  *  SEFInfo::numChannels. The die ID of a die at channel CH, bank BNK, is equal
- *  to CH + BNK*SEFInfo::numChannels.  The die IDs in the dieList in a virtual
- *  device configuration must be in ascending order.  A die ID can only be used
- *  in at most one Virtual Device configuration.  If a die is not included in
- *  any Virtual Device configuration, it will be lost capacity that can never be
- *  used.
+ *  to CH + BNK*SEFInfo::numChannels.  A die ID can only be used in at most one
+ *  Virtual Device configuration.  If a die is not included in any Virtual
+ *  Device configuration, it will be lost capacity that cannot be used.
  *
  *  @see        SEFGetInformation()
  *
@@ -652,7 +673,7 @@ struct SEFVirtualDeviceConfig
  *  @retval    -EACCES           You don't have the needed permission to perform this operation
  */
 struct SEFStatus SEFCreateVirtualDevices(SEFHandle sefHandle, uint16_t numVirtualDevices,
-                      struct SEFVirtualDeviceConfig * const virtualDeviceConfigs[]);
+                      struct SEFVirtualDeviceConfig * const virtualDeviceConfigs[]) NONNULL(1);
 
 
 /**
@@ -676,7 +697,7 @@ struct SEFStatus SEFCreateVirtualDevices(SEFHandle sefHandle, uint16_t numVirtua
  *  @retval -EINVAL           The function parameter is not valid; info returns
  *                            the parameter index that is not valid.
  */
-struct SEFStatus SEFSetNumberOfPSLCSuperBlocks(SEFVDHandle vdHandle, uint32_t numPSLCSuperBlocks);
+struct SEFStatus SEFSetNumberOfPSLCSuperBlocks(SEFVDHandle vdHandle, uint32_t numPSLCSuperBlocks) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -707,7 +728,7 @@ struct SEFVirtualDeviceUsage {
  *  @retval    -ENODEV        The Virtual Device Handle is not valid
  *  @retval    -EPERM         The Virtual Device Handle is not open
  */
-struct SEFStatus SEFGetVirtualDeviceUsage(SEFVDHandle vdHandle, struct SEFVirtualDeviceUsage *usage);
+struct SEFStatus SEFGetVirtualDeviceUsage(SEFVDHandle vdHandle, struct SEFVirtualDeviceUsage *usage) NONNULL(1,2);
 
 /**
  *  @ingroup  CommonStructs
@@ -782,7 +803,7 @@ struct SEFVirtualDeviceInfo {
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
 struct SEFStatus SEFGetDieList(SEFHandle sefHandle, struct SEFVirtualDeviceID virtualDeviceID,
-                                                struct SEFDieList *list, int bufferSize);
+                                                struct SEFDieList *list, size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -805,7 +826,7 @@ struct SEFStatus SEFGetDieList(SEFHandle sefHandle, struct SEFVirtualDeviceID vi
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
 struct SEFStatus SEFGetVirtualDeviceInformation(SEFHandle sefHandle, struct SEFVirtualDeviceID virtualDeviceID,
-                                                struct SEFVirtualDeviceInfo *info, int bufferSize);
+                                                struct SEFVirtualDeviceInfo *info, size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -819,7 +840,15 @@ struct SEFStatus SEFGetVirtualDeviceInformation(SEFHandle sefHandle, struct SEFV
  *                            the parameter index that is not valid.
  */
 struct SEFStatus SEFSetVirtualDeviceSuspendConfig(SEFVDHandle vdHandle,
-                    const struct SEFVirtualDeviceSuspendConfig *config);
+                    const struct SEFVirtualDeviceSuspendConfig *config) NONNULL(1);
+
+/**
+ *  @ingroup    CommonStructs
+ */
+struct SEFQoSDomainCapacity {
+  uint64_t flashCapacity;     /**< Number of ADUs to assign to a QoS Domain */
+  uint64_t flashQuota;        /**< Maximum number of ADUs allowed for a QoS Domain */
+};
 
 /**
  *  @ingroup    ApiManCmd
@@ -832,9 +861,9 @@ struct SEFStatus SEFSetVirtualDeviceSuspendConfig(SEFVDHandle vdHandle,
  *  @see        SEFGetInformation()
  *
  *  @param      vdHandle             Handle to the Virtual Device
- *  @param      QoSDomainID          QoS Domain ID. Unique across all QoS Domains
- *  @param      flashCapacity        Number of required/reserved ADUs
- *  @param      pSLCFlashCapacity    Number of required/reserved pSLC adus
+ *  @param[out] QoSDomainID          Assigned QoS Domain ID.
+ *  @param      flashCapacity        Number of required/reserved/maximum ADUs regular flash
+ *  @param      pSLCFlashCapacity    Number of required/reserved/maximum ADUs pSLC flash
  *  @param      ADUindex             Index into the ADUSize[] array in SEFInfo
  *                                   returned by SEFGetInformation() to select
  *                                   the data and metadata sizes of an ADU.
@@ -859,14 +888,16 @@ struct SEFStatus SEFSetVirtualDeviceSuspendConfig(SEFVDHandle vdHandle,
  *  @retval    -EPERM       The Virtual Device Handle is not open
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    -ENOMEM      The library was unable to allocate needed structures.  status.info is set to the type
- *                          of capacity that caused the failure (kForWrite or kForPSLCWrite)
+ *                          of capacity that caused the failure (0 for kForWrite, 1 for kForPSLCWrite, 2 for
+ *                          QoSD max)
  */
-struct SEFStatus SEFCreateQoSDomain(SEFVDHandle vdHandle, struct SEFQoSDomainID QoSDomainID, uint64_t flashCapacity,
-                                    uint64_t pSLCFlashCapacity, int ADUindex, enum SEFAPIIdentifier api,
-                                    enum SEFDefectManagementMethod defectStrategy, enum SEFErrorRecoveryMode recovery,
-                                    const char *encryptionKey, uint16_t numPlacementIDs, uint16_t maxOpenSuperBlocks,
-                                    uint8_t defaultReadQueue,
-                                    struct SEFWeights weights);
+struct SEFStatus SEFCreateQoSDomain(SEFVDHandle vdHandle, struct SEFQoSDomainID *QoSDomainID,
+                                    struct SEFQoSDomainCapacity *flashCapacity,
+                                    struct SEFQoSDomainCapacity *pSLCFlashCapacity,
+                                    int ADUindex, enum SEFAPIIdentifier api,
+                                    enum SEFDefectManagementMethod defectStrategy,  enum SEFErrorRecoveryMode recovery,
+                                    const char *encryptionKey, uint16_t numPlacementIDs,  uint16_t maxOpenSuperBlocks,
+                                    uint8_t defaultReadQueue, struct SEFWeights weights) NONNULL(1,2);
 
 /**
  *  @ingroup     Enums
@@ -881,16 +912,13 @@ enum SEFSuperBlockType {
  *  @brief      Resets the capacity of a QoS Domain
  *
  *  Sets a new capacity and quota for the QoS Domain. When the flashQuota is
- *  less the flashCapacity or the used flashedCapacity, it will be set to the
- *  larger of the two.
+ *  less than the flashCapacity or the used flashedCapacity, it will be set to
+ *  the larger of the two.
  *
  *  @param      vdHandle         Handle to the Virtual Device
  *  @param      QoSDomainID      QoS Domain ID
  *  @param      type             Type of super block
- *  @param      flashCapacity    Number of required/reserved ADUs for the
- *                               specified type of super block
- *  @param      flashQuota       Number of ADUs that can be allocated for the
- *                               specified type of super block
+ *  @param      capacity         Number of required/reserved/maximum ADUs the flash type
  *
  *  @return     Status and info summarizing result.
  *
@@ -899,9 +927,8 @@ enum SEFSuperBlockType {
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    -ENOSPC      The Virtual Device does not have enough space
  */
-struct SEFStatus SEFSetQoSDomainCapacity(SEFVDHandle vdHandle, struct SEFQoSDomainID QoSDomainID, 
-                                         enum SEFSuperBlockType type, uint64_t flashCapacity,
-                                         uint64_t flashQuota);
+struct SEFStatus SEFSetQoSDomainCapacity(SEFVDHandle vdHandle, struct SEFQoSDomainID QoSDomainID,
+                                         enum SEFSuperBlockType type, struct SEFQoSDomainCapacity *capacity) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -911,7 +938,7 @@ struct SEFStatus SEFSetQoSDomainCapacity(SEFVDHandle vdHandle, struct SEFQoSDoma
  *  using SEFGetQoSDomainInformation().  When a root pointer is set to a flash
  *  address that is valid for the QoS Domain it's stored in, the ADU it points to
  *  can be read by SEFReadWithPhysicalAddress() using a flash address of just
- *  the root pointer index as the ADU oftset with zeros for the QoS DomainId
+ *  the root pointer index as the ADU offset with zeros for the QoS DomainId
  *  and super block index.
  *
  *  @see        SEFReadWithPhysicalAddress()
@@ -926,7 +953,7 @@ struct SEFStatus SEFSetQoSDomainCapacity(SEFVDHandle vdHandle, struct SEFQoSDoma
  *  @retval    -EPERM       The QoS Domain Handle is not open
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  */
-struct SEFStatus SEFSetRootPointer(SEFQoSHandle qosHandle, int index, struct SEFFlashAddress value);
+struct SEFStatus SEFSetRootPointer(SEFQoSHandle qosHandle, int index, struct SEFFlashAddress value) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -942,7 +969,23 @@ struct SEFStatus SEFSetRootPointer(SEFQoSHandle qosHandle, int index, struct SEF
  *  @retval    -ENODEV      The QoS Domain handle is not valid
  *  @retval    -EPERM       The QoS Domain Handle is not open
  */
-struct SEFStatus SEFSetReadDeadline(SEFQoSHandle qosHandle, enum SEFDeadlineType deadline);
+struct SEFStatus SEFSetReadDeadline(SEFQoSHandle qosHandle, enum SEFDeadlineType deadline) NONNULL(1);
+
+/**
+ *  @ingroup    ApiManCmd
+ *  @brief      Sets target QoS Domain's default program and erase weights.
+ *
+ *  @see        SEFQoSDomainInfo
+ *
+ *  @param      qosHandle        Handle to the QoS Domain
+ *  @param      weights          Default program and erase weights for this QoS Domain
+ *
+ *  @return     Status and info summarizing result.
+ *
+ *  @retval    -ENODEV      The QoS Domain handle is not valid
+ *  @retval    -EPERM       The QoS Domain Handle is not open
+ */
+struct SEFStatus SEFSetWeights(SEFQoSHandle qosHandle, struct SEFWeights weights) NONNULL(1);
 
 /**
  *  @ingroup     Enums
@@ -953,7 +996,7 @@ enum SEFSuperBlockState {
   kSuperBlockOpenedByErase,     /**< This is the state of super blocks in the middle of being programmed
                                      and were allocated by SEFAllocateSuperBlock() */
   kSuperBlockOpenedByPlacementId, /**< This is the state of super blocks in the middle of being programmed
-                                       and were allocated automattically by placement id */
+                                       and were allocated automatically by placement id */
 } PACKED;
 
 /**
@@ -1006,7 +1049,7 @@ struct SEFSuperBlockInfo {
                                            requires a SEFCheckSuperBlock to patrol
                                            or refresh */
   uint8_t defects[];                  /**< This is a bitmap indicating which
-                                           planes are dective.
+                                           planes are defective.
                                            SEFQoSDomainInfo::defectMapSize is the
                                            size of this field. */
 };
@@ -1052,7 +1095,8 @@ struct SEFSuperBlockList {
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFGetSuperBlockList(SEFQoSHandle qosHandle, struct SEFSuperBlockList *list, int bufferSize);
+struct SEFStatus SEFGetSuperBlockList(SEFQoSHandle qosHandle, struct SEFSuperBlockList *list,
+                                      size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -1066,8 +1110,10 @@ struct SEFQoSDomainInfo {
   enum SEFAPIIdentifier api;              /**< Specifies the API Identifier for this QoS Domain */
   uint64_t flashCapacity;                 /**< Reserved capacity of the QoS Domain in QoS Domain ADUs */
   uint64_t flashQuota;                    /**< Number of QoS Domain ADUs that can be allocated by the QoS Domain */
+  uint64_t flashUsage;                    /**< Number of QoS Domain ADUs allocated by the QoS Domain*/
   uint64_t pSLCFlashCapacity;             /**< Reserved pSLC capacity of the QoS Domain in QoS Domain ADUs */
   uint64_t pSLCFlashQuota;                /**< Number of pSLC QoS Domain ADUs that can be allocated by the QoS Domain */
+  uint64_t pSLCFlashUsage;                /**< Number of pSLC QoS Domain ADUs allocated by the QoS Domain*/
   struct SEFFlashAddress rootPointers[SEFMaxRootPointer];  /**< List of root pointers */
   struct SEFADUsize ADUsize;              /**< Size of QoS Domain ADUs, data and metadata in bytes */
   uint32_t superBlockCapacity;            /**< Super block capacity in QoS Domain ADUs */
@@ -1098,7 +1144,7 @@ struct SEFQoSDomainInfo {
  *  @retval    0            SEFQoSDomainInfo was successfully returned.
  */
 struct SEFStatus SEFGetQoSDomainInformation(SEFHandle sefHandle, struct SEFQoSDomainID QoSDomainID,
-                                            struct SEFQoSDomainInfo *info);
+                                            struct SEFQoSDomainInfo *info) NONNULL(1,3);
 
 /**
  *  @ingroup    CommonStructs
@@ -1134,7 +1180,7 @@ struct SEFWearInfo {
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFGetReuseList(SEFQoSHandle qosHandle, struct SEFWearInfo *info, int bufferSize);
+struct SEFStatus SEFGetReuseList(SEFQoSHandle qosHandle, struct SEFWearInfo *info, size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -1169,7 +1215,8 @@ struct SEFRefreshInfo {
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFGetRefreshList(SEFQoSHandle qosHandle, struct SEFRefreshInfo *info, int bufferSize);
+struct SEFStatus SEFGetRefreshList(SEFQoSHandle qosHandle, struct SEFRefreshInfo *info,
+                                   size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -1209,7 +1256,8 @@ struct SEFCheckInfo {
   * @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
-struct SEFStatus SEFGetCheckList(SEFQoSHandle qosHandle, struct SEFCheckInfo *info, int bufferSize);
+struct SEFStatus SEFGetCheckList(SEFQoSHandle qosHandle, struct SEFCheckInfo *info,
+                                 size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    CommonStructs
@@ -1250,7 +1298,7 @@ struct SEFUserAddressList {
  *  @retval    0            info field returns the minimum buffer size if the buffer is insufficient or NULL; otherwise, 0
  */
 struct SEFStatus SEFGetUserAddressList(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress,
-                                       struct SEFUserAddressList *list, int bufferSize);
+                                       struct SEFUserAddressList *list, size_t bufferSize) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1270,7 +1318,7 @@ struct SEFStatus SEFGetUserAddressList(SEFQoSHandle qosHandle, struct SEFFlashAd
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  */
 struct SEFStatus SEFGetSuperBlockInfo(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress,
-                                      int getDefectMap, struct SEFSuperBlockInfo *info);
+                                      int getDefectMap, struct SEFSuperBlockInfo *info) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1293,7 +1341,7 @@ struct SEFStatus SEFGetSuperBlockInfo(SEFQoSHandle qosHandle, struct SEFFlashAdd
  *  @retval    -EPERM       The QoS Domain Handle is not open
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  */
-struct SEFStatus SEFCheckSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress);
+struct SEFStatus SEFCheckSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1313,7 +1361,7 @@ struct SEFStatus SEFCheckSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddre
  *  @retval    -ENOTEMPTY        At least one QoS Domain exists
  *  @retval    -EBUSY            The Virtual Device is in use and not all the handles are closed
  */
-struct SEFStatus SEFDeleteVirtualDevices(SEFHandle sefHandle);
+struct SEFStatus SEFDeleteVirtualDevices(SEFHandle sefHandle) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1333,7 +1381,7 @@ struct SEFStatus SEFDeleteVirtualDevices(SEFHandle sefHandle);
  *  @retval    -EACCES      You don't have the needed permission to perform this operation
  *  @retval    -EBUSY       The QoS Domain is in use and not all the handles are closed
  */
-struct SEFStatus SEFDeleteQoSDomain(SEFHandle sefHandle, struct SEFQoSDomainID QoSDomainID);
+struct SEFStatus SEFDeleteQoSDomain(SEFHandle sefHandle, struct SEFQoSDomainID QoSDomainID) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1348,7 +1396,7 @@ struct SEFStatus SEFDeleteQoSDomain(SEFHandle sefHandle, struct SEFQoSDomainID Q
  *  @retval    -EPERM       The Virtual Device handle is not open
  *  @retval    -EINVAL      The QoS Domain Id is not valid
  */
-struct SEFStatus SEFResetEncryptionKey(SEFVDHandle vdHandle, struct SEFQoSDomainID QoSDomainID);
+struct SEFStatus SEFResetEncryptionKey(SEFVDHandle vdHandle, struct SEFQoSDomainID QoSDomainID) NONNULL(1);
 
 /*
  * Normal user operations associated with I/O and the data path
@@ -1381,7 +1429,7 @@ struct SEFStatus SEFResetEncryptionKey(SEFVDHandle vdHandle, struct SEFQoSDomain
  */
 struct SEFStatus SEFOpenVirtualDevice(SEFHandle sefHandle, struct SEFVirtualDeviceID virtualDeviceID,
                                       void (*notifyFunc)(void *, struct SEFVDNotification), void *context,
-                                      SEFVDHandle *vdHandle);
+                                      SEFVDHandle *vdHandle) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1395,7 +1443,7 @@ struct SEFStatus SEFOpenVirtualDevice(SEFHandle sefHandle, struct SEFVirtualDevi
  *  @retval    -EPERM            The Virtual Device Handle is not open
  *  @retval    -EWOULDBLOCK      This function cannot be called on a callback thread
  */
-struct SEFStatus SEFCloseVirtualDevice(SEFVDHandle vdHandle);
+struct SEFStatus SEFCloseVirtualDevice(SEFVDHandle vdHandle) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1410,7 +1458,7 @@ struct SEFStatus SEFCloseVirtualDevice(SEFVDHandle vdHandle);
  *  @param      notifyFunc       Callback to be executed during event generation
  *  @param      context          A void*  pointer passed to the async event notification
  *                               function (used to pass user context information)
- *  @param      encryptionKey    In a multitenant environment, different tenants will
+ *  @param      encryptionKey    In a multi-tenant environment, different tenants will
  *                               write to separate QoS domains.  Provides for individualized
  *                               encryption keys on a per-domain basis
  *  @param[out] qosHandle        Handle to the QoS Domain
@@ -1425,7 +1473,7 @@ struct SEFStatus SEFCloseVirtualDevice(SEFVDHandle vdHandle);
  */
 struct SEFStatus SEFOpenQoSDomain(SEFHandle sefHandle, struct SEFQoSDomainID QoSDomainID,
                                   void (*notifyFunc)(void *, struct SEFQoSNotification), void *context,
-                                  const void *encryptionKey, SEFQoSHandle *qosHandle);
+                                  const void *encryptionKey, SEFQoSHandle *qosHandle) NONNULL(1,6);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1443,7 +1491,7 @@ struct SEFStatus SEFOpenQoSDomain(SEFHandle sefHandle, struct SEFQoSDomainID QoS
  *  @retval    -EPERM           The QoS Domain Handle is not open
  *  @retval    -EWOULDBLOCK     This function cannot be called on a callback thread
  */
-struct SEFStatus SEFCloseQoSDomain(SEFQoSHandle qosHandle);
+struct SEFStatus SEFCloseQoSDomain(SEFQoSHandle qosHandle) NONNULL();
 
 /**
  *  @ingroup    Enums
@@ -1497,7 +1545,7 @@ struct SEFProperty {
  *              be kSefPropertyTypeNull. If kSefPropertyPrivateData is not set,
  *              the returned type of the property will be kSefPropertyTypeNull.
  */
-struct SEFProperty SEFGetQoSHandleProperty(SEFQoSHandle qos, enum SEFPropertyID propID);
+struct SEFProperty SEFGetQoSHandleProperty(SEFQoSHandle qos, enum SEFPropertyID propID) NONNULL();
 
 /**
  *  @ingroup    ApiManCmd
@@ -1517,7 +1565,7 @@ struct SEFProperty SEFGetQoSHandleProperty(SEFQoSHandle qos, enum SEFPropertyID 
  *                          the parameter index that is not valid
  */
 struct SEFStatus SEFSetQoSHandleProperty(SEFQoSHandle qos, enum SEFPropertyID propID,
-                                        struct SEFProperty value);
+                                        struct SEFProperty value) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1545,7 +1593,8 @@ struct SEFStatus SEFSetQoSHandleProperty(SEFQoSHandle qos, enum SEFPropertyID pr
  *  @return     Status and info summarizing result.
  */
 struct SEFStatus SEFParseFlashAddress(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress,
-                                      struct SEFQoSDomainID *QoSDomainID, uint32_t *blockNumber, uint32_t *ADUOffset);
+                                      struct SEFQoSDomainID *QoSDomainID, uint32_t *blockNumber,
+                                      uint32_t *ADUOffset);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1568,7 +1617,7 @@ struct SEFStatus SEFParseFlashAddress(SEFQoSHandle qosHandle, struct SEFFlashAdd
 struct SEFFlashAddress SEFCreateFlashAddress(SEFQoSHandle qosHandle,
                                              struct SEFQoSDomainID QoSDomainID,
                                              uint32_t blockNumber,
-                                             uint32_t ADUOffset);
+                                             uint32_t ADUOffset) NONNULL(1);
 
 /*
  * following routines have sync and async interfaces. QoS Domain must be in the open state
@@ -1584,6 +1633,9 @@ struct SEFFlashAddress SEFCreateFlashAddress(SEFQoSHandle qosHandle,
 struct SEFWriteOverrides {
   uint16_t programWeight;   /**< Weight to use for program instead of the QoS
                                  domain default. 0 will use the QoS Domain
+                                 default. */
+  uint16_t eraseWeight;     /**< Weight to use for erase instead of the QoS
+                                 domain default.  0 will use the QoS Domain
                                  default. */
 };
 
@@ -1629,8 +1681,9 @@ struct SEFWriteOverrides {
  *  library managed buffers.
  *
  *  @param      qosHandle                  Handle to the QoS Domain
- *  @param      flashAddress               Flash address of the super block. SEFAutoAllocate if auto allocate.
- *  @param      placementID                Only valid if the flashAddress is auto allocated. A value from 0 to
+ *  @param      flashAddress               Flash address of the super block. SEFAutoAllocate(PSLC) if auto allocate.
+ *  @param      placementID                Only valid if the flashAddress is auto allocated. The type of FLASH is
+ *                                         set when the write allocates a new super block.  A value from 0 to
  *                                         numPlacementIds–1 indicating what logical data group to place this data in.
  *  @param      userAddress                FTL can store meta-data related to this operation by this field. For
  *                                         example, storing LBA address to bind to this write operation such as data
@@ -1660,7 +1713,7 @@ struct SEFStatus SEFWriteWithoutPhysicalAddress(SEFQoSHandle qosHandle, struct S
                                                 const void *metadata,
                                                 struct SEFFlashAddress *permanentAddresses,
                                                 uint32_t *distanceToEndOfSuperBlock,
-                                                const struct SEFWriteOverrides *overrides);
+                                                const struct SEFWriteOverrides *overrides) NONNULL(1,6,9);
 
 /**
  *  @ingroup    CommonStructs
@@ -1673,7 +1726,7 @@ struct SEFReadOverrides {
   uint16_t readWeight; /**< Weight to use for read instead of the read queue's
                             default. 0 will use the read queue's default. */
   uint8_t readQueue;   /**< Read queue to use for read instead of QoS Domain's
-                            default.  A value of 0 or greater than number of read
+                            default.  A value greater than number of read
                             queues defined for the QoS Domain will use the
                             default read queue for the QoS Domain. */
   uint8_t reserved;    /**< Reserved, must be initialized to zero. */
@@ -1730,8 +1783,8 @@ struct SEFReadOverrides {
  */
 struct SEFStatus SEFReadWithPhysicalAddress(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress,
                                              uint32_t numADU, const struct iovec *iov, uint16_t iovcnt,
-                                             uint32_t iovOffset, struct SEFUserAddress userAddress,
-                                             void *metadata, const struct SEFReadOverrides *overrides);
+                                             size_t iovOffset, struct SEFUserAddress userAddress,
+                                             void *metadata, const struct SEFReadOverrides *overrides) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1751,14 +1804,14 @@ struct SEFStatus SEFReadWithPhysicalAddress(SEFQoSHandle qosHandle, struct SEFFl
  *  @retval    -EPERM       The QoS Domain Handle is not open
  *  @retval    -EFAULT      The Flash Address is not valid
  */
-struct SEFStatus SEFReleaseSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress);
+struct SEFStatus SEFReleaseSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress) NONNULL();
 
 /**
  *  @ingroup    CommonStructs
  *  @brief Supplied to override default super block allocation weight
  *
  *  May be used when calling SEFAllocateSuperBlock() or
- *  SEFAllocateSuperBlockAsync(). 
+ *  SEFAllocateSuperBlockAsync().
  */
 struct SEFAllocateOverrides {
   uint16_t eraseWeight; /**< Weight to use for erase instead of the QoS Domain
@@ -1771,7 +1824,7 @@ struct SEFAllocateOverrides {
  *              QoS Domain and returns the flash address of this super block.
  *
  *  The returned super block will be in the open state.  These super blocks
- *  in turn can be used as part of the parameter set for the SEFNamlessCopy and
+ *  in turn can be used as part of the parameter set for the SEFNamelessCopy and
  *  SEFWriteWithoutPhysicalAddress functions. When allocating a super block, The
  *  SEF Unit intelligently selects a location in a manner designed to optimize
  *  the lifetime of flash memory and will return the flash address that was
@@ -1789,6 +1842,10 @@ struct SEFAllocateOverrides {
  *  @param      qosHandle        Handle to the QoS Domain
  *  @param[out] flashAddress     The flash address of the allocated block
  *  @param      type             kForWrite or kForPSLCWrite
+ *  @param[out] defectMap        Optional buffer to receive the block's defect
+ *                               map.  Used for kFragmented QoS Domains.  When
+ *                               supplied, the buffer must be at least as large
+ *                               as SEFQoSDomainInfo::defectMapSize.
  *  @param      overrides        Overrides to scheduler parameters; pointer
  *                               can be null for none required.
  *
@@ -1801,7 +1858,8 @@ struct SEFAllocateOverrides {
  *  @retval    -ENOSPC      The QoS Domain is out of space
  */
 struct SEFStatus SEFAllocateSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress *flashAddress,
-                                       enum SEFSuperBlockType type, const struct SEFAllocateOverrides *overrides);
+                                       enum SEFSuperBlockType type, uint8_t *defectMap,
+                                       const struct SEFAllocateOverrides *overrides) NONNULL(1,2);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1829,7 +1887,7 @@ struct SEFStatus SEFAllocateSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAd
  *  @retval    -EINVAL      The function parameter is not valid; info returns the parameter index that is not valid
  */
 struct SEFStatus SEFFlushSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress,
-                                    uint32_t *distanceToEndOfSuperBlock);
+                                    uint32_t *distanceToEndOfSuperBlock) NONNULL(1);
 
 /**
  *  @ingroup    ApiManCmd
@@ -1848,20 +1906,21 @@ struct SEFStatus SEFFlushSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddre
  *  @param      flashAddress     Flash address of the super block to move
  *                               to Closed state by filling data
  *
- *  @return     Status and info summarizing result.
+ *  @return     Status and info summarizing result. When .error is zero,
+ *              .info is the size of the super block.
  *
  *  @retval    0            The super block is was closed or was already closed
  *  @retval    -ENODEV      The QoS Domain handle is not valid
  *  @retval    -EPERM       The QoS Domain Handle is not open
  *  @retval    -EFAULT      The Flash Address is not valid
  */
-struct SEFStatus SEFCloseSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress);
+struct SEFStatus SEFCloseSuperBlock(SEFQoSHandle qosHandle, struct SEFFlashAddress flashAddress) NONNULL(1);
 
 /**
  *  @ingroup      Enums
  *  @brief        The source format to be used when copying a super block
  */
-enum SEFCopySourceType { 
+enum SEFCopySourceType {
   kBitmap,    /**< Use validBitmap as the copy source */
   kList       /**< Use flashAddressList as the copy source */
 } PACKED;
@@ -1907,7 +1966,7 @@ struct SEFUserAddressFilter {
  */
 struct SEFAddressChangeRequest {
   uint32_t numProcessedADUs;                  /**< The number of processed ADUs including errors */
-  uint32_t nextADUOffset;                     /**< Given a bitmap source, it indicates the next ADU offset of the source flash address; 
+  uint32_t nextADUOffset;                     /**< Given a bitmap source, it indicates the next ADU offset of the source flash address;
                                                    Given a list source, it indicates the next entry number in the source flash address list */
   uint32_t numReadErrorADUs;                  /**< The number of ADUs that couldn't be processed due to errors */
   uint32_t numADUsLeft;                       /**< The number of remaining ADUs in the destination super block */
@@ -1936,19 +1995,23 @@ struct SEFCopyOverrides {
                                                        when all source ADUs were copied */
 #define kCopyClosedDestination          (1 << 1)  /**< Flag set in status.info field for SEFNamelessCopy() \
                                                        when the destination super block was filled/closed */
-#define kCopyFilteredUserAddresses      (1 << 2)  /**< Flag set in status.info field for SEFNamelessCopy() \
+#define kCopyFilledAddressChangeInfo    (1 << 2)  /**< Flag set in status.info field for SEFNamelessCopy() \
+                                                       when the address change info was filled */
+#define kCopyFilteredUserAddresses      (1 << 3)  /**< Flag set in status.info field for SEFNamelessCopy() \
                                                        when data outside the user address filter was detected */
-#define kCopyReadErrorOnSource          (1 << 3)  /**< Flag set in status.info field for SEFNamelessCopy() when \
+#define kCopyReadErrorOnSource          (1 << 4)  /**< Flag set in status.info field for SEFNamelessCopy() when \
                                                        when some of the source ADUs were not copied because of a read */
-#define kCopyDesinationDefectivePlanes  (1 << 4)  /**< Flag set in status.info field for SEFNamelessCopy() \
+#define kCopyDestinationDefectivePlanes (1 << 5)  /**< Flag set in status.info field for SEFNamelessCopy() \
                                                        when destination super block has defective planes */
+#define kCopyNonClosedSuperBlock        (1 << 6)  /**< Flag set in status.info field for SEFNamelessCopy() \
+                                                       when list indication referenced a non-closed super block */
 
 /**
  *  @ingroup    ApiDataCmd
  *  @brief      Performs Nameless Copy with map or list; optional user address filtering.
  *
  *  Copies ADUs as described by copySource to the copyDestination. Source
- *  addresses can only reference closed superblocks.
+ *  addresses can only reference closed super blocks.
  *
  *  @param      srcQosHandle                 Handle to the source QoS Domain
  *  @param      copySource                   Physical addresses to copy
@@ -1965,9 +2028,11 @@ struct SEFCopyOverrides {
  *  @return     Status and info summarizing result
  *
  *  @retval     0           the info member contains:
- *                          - Destination super block has defective planes (kCopyDesinationDefectivePlanes)
+ *                          - Source list indication referenced non-closed super blocks (kCopyNonClosedSuperBlock)
+ *                          - Destination super block has defective planes (kCopyDestinationDefectivePlanes)
  *                          - Read error was detected on source (kCopyReadErrorOnSource)
  *                          - Data that is out of User Address range is detected (kCopyFilteredUserAddresses)
+ *                          - Filled addressChangeInfo array and stopped the copy (kCopyFilledAddressChangeInfo)
  *                          - Destination super block was filled/closed (kCopyClosedDestination)
  *                          - Consumed entire source bitmap or list (kCopyConsumedSource)
  *  @retval    -ENODEV      The QoS Domain handle is not valid
@@ -1977,7 +2042,7 @@ struct SEFCopyOverrides {
 struct SEFStatus SEFNamelessCopy(SEFQoSHandle srcQosHandle, struct SEFCopySource copySource, SEFQoSHandle dstQosHandle,
                                  struct SEFFlashAddress copyDestination, const struct SEFUserAddressFilter *filter,
                                  const struct SEFCopyOverrides *overrides, uint32_t numAddressChangeRecords,
-                                 struct SEFAddressChangeRequest *addressChangeInfo);
+                                 struct SEFAddressChangeRequest *addressChangeInfo) NONNULL(1);
 
 /**
  * @ingroup Enums
@@ -2039,6 +2104,11 @@ struct SEFWriteWithoutPhysicalAddressIOCB {
  *  @ingroup    ApiDataCmd
  *  @brief      This function is the asynchronous version of SEFWriteWithoutPhysicalAddress().
  *
+ *  A caller allocated IOCB is supplied to initiate the write.  The caller can
+ *  free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
+ *
  *  @note When the kSefIoFlagCommit flag is set in the IOCB's flag field, the returned
  *  tentative addresses will be permanent, potentially adding padding.
  *
@@ -2054,7 +2124,8 @@ struct SEFWriteWithoutPhysicalAddressIOCB {
  *  @param[in,out]  iocb         For asynchronous response from SEF Library.
  *                               Unused fields should be set to 0.
  */
-void SEFWriteWithoutPhysicalAddressAsync(SEFQoSHandle qosHandle, struct SEFWriteWithoutPhysicalAddressIOCB *iocb);
+void SEFWriteWithoutPhysicalAddressAsync(SEFQoSHandle qosHandle,
+                                         struct SEFWriteWithoutPhysicalAddressIOCB *iocb) NONNULL(1,2);
 
 /**
  *  @ingroup    CallbackStructs
@@ -2071,17 +2142,23 @@ struct SEFReadWithPhysicalAddressIOCB {
                                              of bytes per ADU required is
                                              SEFQoSDomainInfo::ADUsize.meta.
                                              May be NULL */
-  uint32_t iovOffset;                   /**< Starting byte offset into iov array */
+  size_t iovOffset;                     /**< Starting byte offset into iov array */
   uint32_t numADU;                      /**< Number of ADUs to be read, maximum is superBlockCapacity */
   uint16_t iovcnt;                      /**< The number of elements in the scatter gather list */
   struct SEFReadOverrides overrides;    /**< Override parameters for scheduling
                                              purposes. Must set kSefIoFlagOverride
                                              in flags to apply */
+  uint16_t reserved[3];                 /**< reserved, must be initialized to 0 */
 };
 
 /**
  *  @ingroup    ApiDataCmd
  *  @brief      This function is the asynchronous version of SEFReadWithPhysicalAddress().
+ *
+ *  A caller allocated IOCB is supplied to initiate the read.  The caller can
+ *  free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
  *
  *  @see        SEFReadWithPhysicalAddress()
  *
@@ -2090,7 +2167,8 @@ struct SEFReadWithPhysicalAddressIOCB {
  *                               Unused fields should be set to 0.
  *
  */
-void SEFReadWithPhysicalAddressAsync(SEFQoSHandle qosHandle, struct SEFReadWithPhysicalAddressIOCB *iocb);
+void SEFReadWithPhysicalAddressAsync(SEFQoSHandle qosHandle,
+                                     struct SEFReadWithPhysicalAddressIOCB *iocb) NONNULL(1,2);
 
 /**
  *  @ingroup    CallbackStructs
@@ -2104,13 +2182,18 @@ struct SEFReleaseSuperBlockIOCB {
  *  @ingroup    ApiManCmd
  *  @brief      This function is the asynchronous version of SEFReleaseSuperBlock().
  *
+ *  A caller allocated IOCB is supplied to initiate the release.  The caller can
+ *  free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
+ *
  *  @see        SEFReleaseSuperBlock()
  *
  *  @param          qosHandle    Handle to the QoS Domain
  *  @param[in,out]  iocb         For asynchronous response from SEF Library
  *                               Unused fields should be set to 0.
  */
-void SEFReleaseSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFReleaseSuperBlockIOCB *iocb);
+void SEFReleaseSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFReleaseSuperBlockIOCB *iocb) NONNULL(1,2);
 
 /**
  *  @ingroup    CallbackStructs
@@ -2119,6 +2202,11 @@ void SEFReleaseSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFReleaseSuperBlo
 struct SEFAllocateSuperBlockIOCB {
   struct SEFCommonIOCB common;            /**< [In,Out] Common fields for all IOCBs */
   struct SEFFlashAddress flashAddress;    /**< [Out] Address of super block */
+  uint8_t *defectMap;                     /**< Optional buffer to receive the block's
+                                               defect map.  Used for kFragmented
+                                               QoS Domains.  When supplied, the
+                                               buffer must be at least as large
+                                               as SEFQoSDomainInfo::defectMapSize. */
   struct SEFAllocateOverrides overrides;  /**< Override parameters for scheduling
                                                purposes. Must set kSefIoFlagOverride
                                                in flags to apply */
@@ -2129,13 +2217,18 @@ struct SEFAllocateSuperBlockIOCB {
  *  @ingroup    ApiManCmd
  *  @brief      This function is the asynchronous version of SEFAllocateSuperBlock().
  *
+ *  A caller allocated IOCB is supplied to initiate the allocation.  The caller
+ *  can free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
+ *
  *  @see        SEFAllocateSuperBlock()
  *
  *  @param          qosHandle    Handle to the QoS Domain
  *  @param[in,out]  iocb         For asynchronous response from SEF Library
  *                               Unused fields should be set to 0.
  */
-void SEFAllocateSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFAllocateSuperBlockIOCB *iocb);
+void SEFAllocateSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFAllocateSuperBlockIOCB *iocb) NONNULL(1,2);
 
 /**
  *  @ingroup    CallbackStructs
@@ -2150,8 +2243,13 @@ struct SEFCloseSuperBlockIOCB {
  *  @ingroup    ApiManCmd
  *  @brief      This function is the asynchronous version of SEFCloseSuperBlock().
  *
- *  kSuperBlockStateChanged will have been sent before the completion routine
- *  is called and the iocb is marked as done.
+ *  A caller allocated IOCB is supplied to initiate the close.  The caller can
+ *  free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
+ *
+ *  @note kSuperBlockStateChanged will have been sent and processed before the
+ *  completion routine is called and the iocb is marked as done.
  *
  *  @see        SEFCloseSuperBlock()
  *
@@ -2159,7 +2257,7 @@ struct SEFCloseSuperBlockIOCB {
  *  @param[in,out]  iocb         For asynchronous response from SEF Library
  *
  */
-void SEFCloseSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFCloseSuperBlockIOCB *iocb);
+void SEFCloseSuperBlockAsync(SEFQoSHandle qosHandle, struct SEFCloseSuperBlockIOCB *iocb) NONNULL(1,2);
 
 /**
  *  @ingroup    CallbackStructs
@@ -2184,13 +2282,18 @@ struct SEFNamelessCopyIOCB {
  *  @ingroup    ApiDataCmd
  *  @brief      This function is the asynchronous version of SEFNamelessCopy().
  *
+ *  A caller allocated IOCB is supplied to initiate the copy.  The caller can
+ *  free the IOCB once the kSefIoFlagDone bit is set in common.flags or the
+ *  common.callback_func has been called.  When the IOCB is malformed, the
+ *  callback_func may be called on the submitters thread.
+ *
  *  @see        SEFNamelessCopy()
  *
  *  @param          qosHandle    Handle to the source QoS Domain
  *  @param[in,out]  iocb         For asynchronous response from SEF Library
  *                               Unused fields should be set to 0.
  */
-void SEFNamelessCopyAsync(SEFQoSHandle qosHandle, struct SEFNamelessCopyIOCB *iocb);
+void SEFNamelessCopyAsync(SEFQoSHandle qosHandle, struct SEFNamelessCopyIOCB *iocb) NONNULL(1,2);
 
 #pragma pack(pop)
 
